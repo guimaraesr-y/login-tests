@@ -36,14 +36,15 @@
 
 				const xhttp = new XMLHttpRequest();
 				xhttp.open('POST', '/auth_login/', true);
+				xhttp.setRequestHeader('Content-Type', 'application/json')
+				xhttp.send(JSON.stringify(json));
+				
 				xhttp.onload = () => {
 					if(xhttp.status == 200) {
 						alert('Login successful!');
-						window.location.href += '/me'
+						window.location.href = '/me'
 					}
 				}
-				xhttp.setRequestHeader('Content-Type', 'application/json')
-				xhttp.send(JSON.stringify(json));
 			}
 		</script>
 	</body>
