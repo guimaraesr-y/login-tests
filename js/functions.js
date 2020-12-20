@@ -3,7 +3,7 @@ const fs     = require("fs");
 const bcrypt = require("bcrypt");
 
 function registerUser(user, pass, res) {
-  fs.readFile('users.json',(err, users) => {
+  fs.readFile('users/users.json',(err, users) => {
     var result = 400;
   	let check = true;
     var data;
@@ -25,7 +25,7 @@ function registerUser(user, pass, res) {
       data.push(userData);
       json = JSON.stringify(data);
       
-    	fs.writeFile('users.json', json, 'utf8', err => {
+    	fs.writeFile('users/users.json', json, 'utf8', err => {
     		if(err) throw err;
     	})
     	result = 200
@@ -41,13 +41,13 @@ function registerUser(user, pass, res) {
   	}
   })
 }
+
 function createID() {
-  return random(1000, 9999)
+  return random(1, 999999)
 }
 function random(min, max) {
   return Math.floor(Math.random() * (max - min)) + min
 }
-
 
 
 function encryptPass(pass) {
@@ -57,10 +57,7 @@ function encryptPass(pass) {
 }
 
 function checkPass(user, pass, res) {
-  let salt = bcrypt.genSaltSync(12);
-  let userpass = bcrypt.hashSync(pass, salt);
-  
-  fs.readFile("users.json",(err,data)=> {
+  fs.readFile("users/users.json",(err,data)=> {
     if(err) throw err;
     
     users = JSON.parse(data);
@@ -68,7 +65,9 @@ function checkPass(user, pass, res) {
     let check = false;
     let info;
     users.forEach((json, i) => {
-      if(json["password"] == userpass && json["username"] == user){
+      let equal = bcrypt.compareSync(pass, json["password"]);
+      
+      if(equal && json["username"] == user){
         info = users[i];
         check = true;
       }
@@ -76,9 +75,13 @@ function checkPass(user, pass, res) {
     
     if (check) {
       res.status(200);
-      res.send(encryptPass(info["id"]));
-      
+      let cookie = encryptPass(JSON.stringify(info.id))
+      res.cookie("id", cookie, { maxAge: 900000, httpOnly: true })
+
       res.end();
+    } else {
+      res.status(400)
+      res.end()
     }
   })
 }

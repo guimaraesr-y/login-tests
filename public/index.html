@@ -42,7 +42,11 @@
 				xhttp.onload = () => {
 					if(xhttp.status == 200) {
 						alert('Login successful!');
+						//id = xhttp.responseText;
+						
 						window.location.href = '/me'
+					} else {
+					  alert('Username or pass incorrect!')
 					}
 				}
 			}
