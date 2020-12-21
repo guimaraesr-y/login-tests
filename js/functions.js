@@ -3,41 +3,48 @@ const fs     = require("fs");
 const bcrypt = require("bcrypt");
 
 function registerUser(user, pass, res) {
-  fs.readFile('users/users.json',(err, users) => {
-    var result = 400;
-  	let check = true;
-    var data;
-		data = JSON.parse(users)
-	
-    var userData = {
-        id: createID(),
-        username: user,
-        password: encryptPass(pass)
-    }
+  var data, thisId = createID();
+	let willwrite = true;
+  
+  fs.readFile('users/id.json',(err,ids)=>{
+  	let idsData = JSON.parse(ids);
   	
-  	data.forEach(json => {
-  	  if(json["username"] == user) {
-  	    check = false;
-  	  }
-  	})
-    
-    if(check == true) {
-      data.push(userData);
-      json = JSON.stringify(data);
-      
-    	fs.writeFile('users/users.json', json, 'utf8', err => {
-    		if(err) throw err;
-    	})
-    	result = 200
-    }
-  	console.log(result)
-  	res.status(result)
-  	if(result == 200) {
-  	  res.send("done")
-  	  res.end()
-  	} else {
-  	  res.send("error")
-  	  res.end()
+  	for(let key in idsData) {
+			if(idsData.hasOwnProperty(user)) {
+				res.send("error");
+	  		res.end();
+	  		willwrite = false;
+				break;
+			}
+			if(thisId == idsData[key]) {
+				thisId = createID();
+			}
+		}
+		
+		if(willwrite) {
+			idsData[user] = thisId;
+		
+			fs.writeFile("users/id.json", JSON.stringify(idsData), (err) => {
+				if (err) throw err;
+			})
+		}
+  })
+  
+  fs.readFile('users/users.json',(err, users) => {
+  	if (willwrite) {
+			data = JSON.parse(users);
+			
+			data[thisId] = {
+				username: user, 
+				password: encryptPass(pass)
+			}
+			
+			fs.writeFile("users/users.json", JSON.stringify(data), (err) => {
+				if (err) throw err;
+			})
+  		
+		  res.send("done");
+		  res.end();
   	}
   })
 }
@@ -59,29 +66,23 @@ function encryptPass(pass) {
 function checkPass(user, pass, res) {
   fs.readFile("users/users.json",(err,data)=> {
     if(err) throw err;
-    
     users = JSON.parse(data);
     
-    let check = false;
-    let info;
-    users.forEach((json, i) => {
-      let equal = bcrypt.compareSync(pass, json["password"]);
-      
-      if(equal && json["username"] == user){
-        info = users[i];
-        check = true;
-      }
-    })
+    let ids = JSON.parse(fs.readFileSync("users/id.json", {encoding: "utf8", flag: "r"}));
     
-    if (check) {
-      res.status(200);
-      let cookie = encryptPass(JSON.stringify(info.id))
-      res.cookie("id", cookie, { maxAge: 900000, httpOnly: true })
-
-      res.end();
-    } else {
-      res.status(400)
+    if(!ids.hasOwnProperty(user)) {
+    	res.status(400)
       res.end()
+    } else {
+	    let thisId = ids[user];
+	    
+	    if(bcrypt.compareSync(pass, users[thisId].password)) {
+	    	res.status(200);
+	      let cookie = encryptPass(JSON.stringify(thisId));
+	      res.cookie("id", cookie, {maxAge: 900000, httpOnly: true});
+    	
+	      res.end();
+	    }
     }
   })
 }

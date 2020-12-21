@@ -1,0 +1,15 @@
+* {
+	margin: 0;
+	font-family: Monospace;
+}
+
+div {
+	display: block;
+	text-align: center;
+	font-size: 18px;
+	background-color: #404040;
+}
+
+h1 {
+	color: white;
+}
